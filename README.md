@@ -1,28 +1,14 @@
-# Reto Técnico: Procesamiento de Transacciones Bancarias (CLI)
+# Procesamiento de Transacciones Bancarias (CLI)
 
-## Objetivo:
+## Introducción
 
-Desarrolla una aplicación de línea de comandos (CLI) que procese un archivo CSV con transacciones bancarias y genere un reporte que incluya:
+Este proyecto es mi solución al reto técnico de Codeable. Desarrollé una aplicación de línea de comandos usando JavaScript (Node.js) que procesa un archivo CSV con transacciones bancarias y genera un reporte con el balance final, la transacción de mayor monto y el conteo por tipo.
 
-- **Balance Final:**  
-  Suma de los montos de las transacciones de tipo "Crédito" menos la suma de los montos de las transacciones de tipo "Débito".
+## Instrucciones de Ejecución
 
-- **Transacción de Mayor Monto:**  
-  Identificar el ID y el monto de la transacción con el valor más alto.
+1. Me aseguré de que Node.js esté instalado en el sistema.
 
-- **Conteo de Transacciones:**  
-  Número total de transacciones para cada tipo ("Crédito" y "Débito").
-
----
-
-## Instrucciones
-
-1. **Repositorio Base:**  
-   Clona o haz un fork del repositorio base disponible en:  
-   `https://github.com/codeableorg/interbank-academy-25`
-
-2. **Entrada de Datos:**  
-   La aplicación deberá leer un archivo CSV. Ejemplo de contenido:
+2. Uso un archivo llamado `data.csv` en la raíz del proyecto con el siguiente formato:
 
    ```
    id,tipo,monto
@@ -33,34 +19,131 @@ Desarrolla una aplicación de línea de comandos (CLI) que procese un archivo CS
    5,Crédito,150.00
    ```
 
-3. **Salida del Programa:**  
-   La aplicación debe mostrar el reporte final en la terminal.  
-   Ejemplo de salida:
+3. Para ejecutar la aplicación, utilizo este comando:
 
-   ```
-   Reporte de Transacciones
-   ---------------------------------------------
-   Balance Final: 325.00
-   Transacción de Mayor Monto: ID 3 - 200.00
-   Conteo de Transacciones: Crédito: 3 Débito: 2
+   ```bash
+   node index.js
    ```
 
-4. **Lenguaje de Programación:**  
-   Utiliza el lenguaje de tu preferencia. Opciones recomendadas:
+## Enfoque y Solución
+El código que compartí es mi solución para procesar transacciones bancarias desde un archivo CSV y generar un reporte con el balance final, la transacción de mayor monto y el conteo de transacciones por tipo (Crédito o Débito). Aquí te explico cómo funciona cada parte:
 
-   - Python
-   - Java
-   - C#
-   - JavaScript (Node.js)
+1. **Lectura del archivo CSV:** Uso `fs.readFileSync` para leer el archivo `data.csv` y luego lo proceso línea por línea, ignorando la primera línea (encabezados).
+2. **Procesamiento de Transacciones:**
+   - Sumo los montos de las transacciones de tipo "Crédito" y resto los de tipo "Débito".
+   - Identifico la transacción con el monto más alto.
+   - Llevo un conteo de cuántas transacciones son de tipo "Crédito" y cuántas de tipo "Débito".
+3. **Validación de Transacciones:** Verifico que cada línea tenga un ID, tipo y monto válidos antes de procesarla. Si alguna transacción no es válida, la ignoro.
+4. **Generación del Reporte:** Imprimo un reporte en consola con el balance final, la transacción de mayor monto y el conteo de transacciones por tipo.
 
-5. **README del Proyecto:**  
-   Incluye un archivo `README.md` con la siguiente estructura:
 
-   - **Introducción:** Breve descripción del reto y su propósito.
-   - **Instrucciones de Ejecución:** Cómo instalar dependencias y ejecutar la aplicación.
-   - **Enfoque y Solución:** Lógica implementada y decisiones de diseño.
-   - **Estructura del Proyecto:** Archivos y carpetas principales.
+## Estructura del Proyecto
 
-6. **Documentación y Calidad del Código:**
-   - Código bien documentado y fácil de leer.
-   - Comentarios explicando pasos clave y lógica del programa.
+```
+├── data.csv     # Archivo de entrada con las transacciones bancarias
+├── index.js     # Archivo principal con la lógica de procesamiento
+└── README.md    # Documentación del proyecto
+```
+
+## Código principal (index.js)
+
+```javascript
+const fs = require('fs');
+
+/**
+ * Lee el archivo CSV, procesa las transacciones y genera un reporte.
+ */
+function generateTransactionReport(filePath) {
+   const data = readCsvFile(filePath);
+
+   const transactionSummary = processTransactions(data);
+   printTransactionReport(transactionSummary);
+}
+
+/**
+ * Lee el archivo CSV y devuelve un array de transacciones.
+ */
+function readCsvFile(filePath) {
+   const fileContent = fs.readFileSync(filePath, 'utf8');
+   const lines = fileContent.split('\n').slice(1); // Ignora la primera línea (encabezados)
+
+   return lines.map(line => parseTransactionLine(line));
+}
+
+/**
+ * Parsea una línea del CSV y devuelve un objeto con los datos de la transacción.
+ */
+function parseTransactionLine(line) {
+   const [id, type, amountStr] = line.trim().split(',');
+
+   return {
+      id,
+      type,
+      amount: parseFloat(amountStr)
+   };
+}
+
+/**
+ * Procesa las transacciones y devuelve un resumen con el balance final,
+ * la transacción de mayor monto y el conteo por tipo.
+ * @param {Array} transactions - Array de transacciones.
+ */
+function processTransactions(transactions) {
+   let balance = 0;
+   let maxAmount = 0;
+   let maxTransactionId = null;
+   let creditCount = 0;
+   let debitCount = 0;
+
+   for (const transaction of transactions) {
+      if (!isValidTransaction(transaction)) continue;
+
+      if (transaction.amount > maxAmount) {
+         maxAmount = transaction.amount;
+         maxTransactionId = transaction.id;
+      }
+
+      if (transaction.type === 'Crédito') {
+         balance += transaction.amount;
+         creditCount++;
+      } else if (transaction.type === 'Débito') {
+         balance -= transaction.amount;
+         debitCount++;
+      }
+   }
+
+   return {
+      balance,
+      maxTransaction: { id: maxTransactionId, amount: maxAmount },
+      transactionCount: { credit: creditCount, debit: debitCount }
+   };
+}
+
+/**
+ * Verifica si la transacción es válida.
+ *
+ * Una transacción es válida si:
+ * 1. Tiene un `id` no vacío.
+ * 2. Tiene un `type` (tipo) no vacío.
+ * 3. El `amount` (monto) es un número válido.
+ * @param {Object} transaction - Objeto de transacción.
+ */
+function isValidTransaction(transaction) {
+   return transaction.id && transaction.type && !isNaN(transaction.amount);
+}
+
+/**
+ * Imprime el reporte de las transacciones en la consola.
+ */
+function printTransactionReport({ balance, maxTransaction, transactionCount }) {
+   console.log('Reporte de Transacciones');
+   console.log('---------------------------------------------');
+   console.log(`Balance Final: ${balance.toFixed(2)}`);
+   console.log(`Transacción de Mayor Monto: ID ${maxTransaction.id} - ${maxTransaction.amount.toFixed(2)}`);
+   console.log(`Conteo de Transacciones: Crédito: ${transactionCount.credit} Débito: ${transactionCount.debit}`);
+}
+
+// Ejecutar el reporte de transacciones
+generateTransactionReport('data.csv');
+
+```
